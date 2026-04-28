@@ -346,6 +346,12 @@
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Clear
     </button>
+    <button class="btn desktop-only" id="btn-undo" title="Undo (Cmd/Ctrl+Z)">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4L2 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 8h6a4 4 0 110 8H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="btn desktop-only" id="btn-redo" title="Redo (Cmd/Ctrl+Shift+Z)">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 8H7a4 4 0 100 8h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
     <!-- Mobile-only actions -->
     <button class="btn mobile-only" id="btn-select-all">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 8h8M8 4v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -484,6 +490,8 @@
   const btnPreview = document.getElementById('btn-preview');
   const btnSync = document.getElementById('btn-sync');
   const btnClear = document.getElementById('btn-clear');
+  const btnUndo = document.getElementById('btn-undo');
+  const btnRedo = document.getElementById('btn-redo');
   const btnOpenNew = document.getElementById('btn-open-new');
   const btnRefresh = document.getElementById('btn-refresh-preview');
   const fileInput = document.getElementById('file-input');
@@ -593,6 +601,18 @@
       setStatus('ready', 'ready');
       showToast('Editor cleared');
     }
+  });
+
+  btnUndo.addEventListener('click', () => {
+    editor.execCommand('undo');
+    editor.focus();
+    showToast('Undo');
+  });
+
+  btnRedo.addEventListener('click', () => {
+    editor.execCommand('redo');
+    editor.focus();
+    showToast('Redo');
   });
 
   // ── File upload ──
