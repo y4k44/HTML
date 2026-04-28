@@ -486,6 +486,10 @@
         <div class="pane-title">editor</div>
         <div class="lang-badge">HTML</div>
         <div class="spacer"></div>
+        <button class="btn desktop-only" id="btn-copy-all-desktop">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5" y="2" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 5.5V13a1.5 1.5 0 001.5 1.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Copy
+        </button>
         <div class="pane-actions desktop-only">
           <button class="btn icon-only" id="btn-editor-fullscreen" title="Toggle editor fullscreen">
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 2H2v4M10 2h4v4M14 10v4h-4M2 10v4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -685,6 +689,7 @@ window.addEventListener('DOMContentLoaded', function () {
   const dropOverlay = document.getElementById('drop-overlay');
   const btnSelectAll = document.getElementById('btn-select-all');
   const btnCopyAll = document.getElementById('btn-copy-all');
+  const btnCopyAllDesktop = document.getElementById('btn-copy-all-desktop');
   const draftRestore = document.getElementById('draft-restore');
   const draftRestoreMessage = document.getElementById('draft-restore-message');
   const btnRestoreDraft = document.getElementById('btn-restore-draft');
@@ -699,6 +704,7 @@ window.addEventListener('DOMContentLoaded', function () {
   const btnReplaceAll = document.getElementById('btn-replace-all');
   const btnCloseFind = document.getElementById('btn-close-find');
   const btnOpenNewMobile = document.getElementById('btn-open-new-mobile');
+  const scroller = editor.getScrollerElement();
 
   function setStatus(type, label) {
     statusDot.className = 'status-dot' + (type === 'live' ? ' live' : '');
@@ -1193,6 +1199,26 @@ window.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  btnCopyAllDesktop.addEventListener('click', async () => {
+    const value = editor.getValue();
+    if (!value) {
+      showToast('Editor is empty');
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        editor.execCommand('selectAll');
+        document.execCommand('copy');
+      }
+      editor.focus();
+      showToast('All code copied');
+    } catch (err) {
+      showToast('Copy failed');
+    }
+  });
+
   btnOpenNewMobile.addEventListener('click', () => {
     const html = editor.getValue().trim();
     if (!html) {
@@ -1208,6 +1234,7 @@ window.addEventListener('DOMContentLoaded', function () {
   let pinchStartDist = null;
   let pinchStartSize = 13;
   let currentFontSize = 13;
+  let scrollTouchStartY = null;
 
   function setEditorFontSize(px) {
     currentFontSize = Math.min(36, Math.max(8, px));
@@ -1240,6 +1267,27 @@ window.addEventListener('DOMContentLoaded', function () {
   cmWrap.addEventListener('touchend', e => {
     if (e.touches.length < 2) pinchStartDist = null;
   });
+
+  scroller.addEventListener('touchstart', e => {
+    if (!isMobileView() || e.touches.length !== 1) return;
+    scrollTouchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  scroller.addEventListener('touchmove', e => {
+    if (!isMobileView() || e.touches.length !== 1 || scrollTouchStartY === null) return;
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - scrollTouchStartY;
+    const atTop = scroller.scrollTop <= 0;
+    const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+
+    if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  scroller.addEventListener('touchend', () => {
+    scrollTouchStartY = null;
+  }, { passive: true });
 
   window.addEventListener('resize', optimizeEditorForViewport);
 
