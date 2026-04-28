@@ -69,6 +69,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  #titlebar .filename.dirty::after { content: ' •'; color: var(--amber); }
   #titlebar .spacer { flex: 1; }
   #titlebar .status-dot {
     width: 8px; height: 8px; border-radius: 50%;
@@ -77,6 +78,7 @@
     transition: background 0.3s;
   }
   #titlebar .status-dot.live { background: var(--green); box-shadow: 0 0 0 3px var(--green-dim); }
+  #titlebar .status-dot.dirty { background: var(--amber); box-shadow: 0 0 0 3px rgba(210,153,34,0.12); }
   #titlebar .status-label { font-size: 11px; color: var(--muted); letter-spacing: 0.03em; }
 
   /* ── BUTTONS ── */
@@ -105,6 +107,7 @@
   .btn.toggle-on .dot { background: var(--green); }
   .btn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 0.2s; }
   .btn svg { flex-shrink: 0; }
+  .btn.icon-only { padding: 0 9px; }
 
   /* ── LAYOUT ── */
   #app { display: flex; flex-direction: column; height: 100vh; }
@@ -112,6 +115,16 @@
   #editor-pane { display: flex; flex-direction: column; width: 50%; min-width: 200px; border-right: 1px solid var(--border); overflow: hidden; }
   #preview-pane { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
   #cm-wrap, .CodeMirror, .CodeMirror-scroll, .CodeMirror-sizer { max-width: 100%; }
+  #app.editor-fullscreen #preview-pane,
+  #app.editor-fullscreen #drag-handle,
+  #app.preview-fullscreen #editor-pane,
+  #app.preview-fullscreen #drag-handle { display: none !important; }
+  #app.editor-fullscreen #editor-pane,
+  #app.preview-fullscreen #preview-pane {
+    width: 100% !important;
+    flex: 1 1 100%;
+    border-right: none;
+  }
 
   /* ── PANE HEADERS ── */
   .pane-header {
@@ -130,6 +143,7 @@
     border: 1px solid rgba(88,166,255,0.2);
     border-radius: 4px; padding: 1px 6px;
   }
+  .pane-actions { display: flex; align-items: center; gap: 6px; }
 
   /* ── DRAG HANDLE ── */
   #drag-handle {
@@ -170,6 +184,19 @@
   }
   .preview-placeholder p { font-size: 13px; }
   .preview-placeholder .hint { font-size: 11px; color: #484f58; }
+  #preview-error {
+    display: none;
+    padding: 10px 12px;
+    background: rgba(248,81,73,0.1);
+    border-bottom: 1px solid rgba(248,81,73,0.22);
+    color: #ffb4ae;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #preview-error.visible { display: block; }
 
   /* ── LIVE BADGE ── */
   #live-badge {
@@ -200,6 +227,68 @@
     pointer-events: none;
   }
   #drop-overlay.show { display: flex; }
+
+  /* ── RESTORE BANNER ── */
+  #draft-restore {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(210,153,34,0.1);
+    border-bottom: 1px solid rgba(210,153,34,0.18);
+    color: #f2cc60;
+    font-size: 12px;
+  }
+  #draft-restore.show { display: flex; }
+  #draft-restore .message { flex: 1; }
+
+  /* ── FIND PANEL ── */
+  #find-panel {
+    display: none;
+    position: fixed;
+    top: 62px;
+    right: 16px;
+    width: min(360px, calc(100vw - 32px));
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.35);
+    z-index: 1200;
+  }
+  #find-panel.visible { display: block; }
+  .find-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .find-row:last-child { margin-bottom: 0; }
+  .find-row input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 0 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font: 12px var(--font-ui);
+  }
+  .find-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.12);
+  }
+  #find-status {
+    min-width: 68px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: right;
+    font-family: var(--font-mono);
+  }
+  .find-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* ── TOAST ── */
   #toast {
@@ -290,6 +379,11 @@
       margin-right: auto;
     }
 
+    #find-panel,
+    #draft-restore {
+      display: none !important;
+    }
+
     .CodeMirror {
       width: 100% !important;
       max-width: 100% !important;
@@ -346,6 +440,14 @@
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Clear
     </button>
+    <button class="btn desktop-only" id="btn-find" title="Find and replace">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Find
+    </button>
+    <button class="btn desktop-only" id="btn-wrap" title="Toggle word wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h9a2.5 2.5 0 010 5H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9 7l-2 2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9h3M2 12h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Wrap
+    </button>
     <button class="btn desktop-only" id="btn-undo" title="Undo (Cmd/Ctrl+Z)">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4L2 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 8h6a4 4 0 110 8H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -375,6 +477,11 @@
         <div class="pane-title">editor</div>
         <div class="lang-badge">HTML</div>
         <div class="spacer"></div>
+        <div class="pane-actions desktop-only">
+          <button class="btn icon-only" id="btn-editor-fullscreen" title="Toggle editor fullscreen">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 2H2v4M10 2h4v4M14 10v4h-4M2 10v4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
         <div id="live-badge">live</div>
         <div class="char-count" id="char-count">0 chars</div>
       </div>
@@ -389,6 +496,11 @@
       <div class="pane-header">
         <div class="pane-title">preview</div>
         <div class="spacer"></div>
+        <div class="pane-actions desktop-only">
+          <button class="btn icon-only" id="btn-preview-fullscreen" title="Toggle preview fullscreen">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 2H2v4M10 2h4v4M14 10v4h-4M2 10v4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
         <button class="btn" id="btn-open-new" title="Open in new tab">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 2H2a1 1 0 00-1 1v11a1 1 0 001 1h11a1 1 0 001-1v-4M10 1h5v5M15 1L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Open tab
@@ -398,6 +510,7 @@
           Reload
         </button>
       </div>
+      <div id="preview-error"></div>
       <div class="preview-placeholder" id="preview-placeholder">
         <div class="icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 21h8M12 18v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 8l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -410,11 +523,34 @@
   </div>
 </div>
 
+<div id="draft-restore">
+  <div class="message" id="draft-restore-message">A saved draft was found from your last session.</div>
+  <button class="btn" id="btn-restore-draft">Restore draft</button>
+  <button class="btn" id="btn-dismiss-draft">Dismiss</button>
+</div>
+
 <!-- DROP OVERLAY -->
 <div id="drop-overlay">Drop your HTML file here</div>
 
 <!-- TOAST -->
-<div id="toast" id="toast"></div>
+<div id="toast"></div>
+
+<div id="find-panel" class="desktop-only">
+  <div class="find-row">
+    <input id="find-input" type="text" placeholder="Find">
+    <div id="find-status">0 / 0</div>
+  </div>
+  <div class="find-row">
+    <input id="replace-input" type="text" placeholder="Replace with">
+  </div>
+  <div class="find-actions">
+    <button class="btn" id="btn-find-prev">Prev</button>
+    <button class="btn" id="btn-find-next">Next</button>
+    <button class="btn" id="btn-replace-one">Replace</button>
+    <button class="btn" id="btn-replace-all">Replace All</button>
+    <button class="btn" id="btn-close-find">Close</button>
+  </div>
+</div>
 
 <script>
   const STARTER = `<!DOCTYPE html>
@@ -440,34 +576,49 @@
   <p>Edit this HTML in the editor and click <strong>Preview</strong> to see it rendered — or toggle <strong>Live Sync</strong> to see changes update automatically.</p>
 </body>
 </html>`;
+  const AUTOSAVE_KEY = 'html-viewer-autosave-v1';
+  const AUTOSAVE_META_KEY = 'html-viewer-autosave-meta-v1';
+  const PREVIEW_HOOK = `<script>
+window.addEventListener('error', function (event) {
+  try {
+    parent.postMessage({ source: 'html-viewer-preview', type: 'error', message: event.message || 'Script error' }, '*');
+  } catch (e) {}
+});
+window.addEventListener('unhandledrejection', function (event) {
+  try {
+    var reason = event.reason;
+    parent.postMessage({ source: 'html-viewer-preview', type: 'error', message: reason && reason.message ? reason.message : String(reason || 'Unhandled promise rejection') }, '*');
+  } catch (e) {}
+});
+window.addEventListener('DOMContentLoaded', function () {
+  try {
+    parent.postMessage({ source: 'html-viewer-preview', type: 'loaded' }, '*');
+  } catch (e) {}
+});
+<\/script>`;
 
   // ── CodeMirror setup ──
-  const LARGE_FILE_THRESHOLD = 800; // lines above which we use lite mode
-
+  const LARGE_FILE_THRESHOLD = 800;
+  const app = document.getElementById('app');
   const cmWrap = document.getElementById('cm-wrap');
   const editor = CodeMirror(cmWrap, {
     value: STARTER,
     mode: 'htmlmixed',
     theme: 'dracula',
     lineNumbers: true,
-    lineWrapping: false,
+    lineWrapping: true,
     autoCloseTags: true,
     matchBrackets: true,
     indentUnit: 2,
     tabSize: 2,
     indentWithTabs: false,
-    // Performance: reduce DOM node count dramatically on large files
     flattenSpans: false,
     addModeClass: false,
-    // Render 50 lines above/below viewport for smooth scrolling without lag
     viewportMargin: 50,
-    // Don't re-tokenize the whole file on every keystroke
     pollInterval: 100,
     extraKeys: { Tab: cm => cm.replaceSelection('  ') },
   });
 
-  // Dynamically switch between full htmlmixed and lightweight xml-only
-  // mode depending on file size to keep the editor responsive.
   function applyModeForSize(lineCount) {
     const currentMode = editor.getOption('mode');
     if (lineCount > LARGE_FILE_THRESHOLD && currentMode !== 'xml') {
@@ -483,20 +634,30 @@
   // ── State ──
   let liveSync = false;
   let liveTimer = null;
-  let previewActive = false;
   let mobileSelectionPrimed = false;
+  let wordWrapEnabled = true;
+  let currentBaseline = STARTER;
+  let autosaveTimer = null;
+  let currentFullscreenPane = null;
+  let lastSearchMatches = [];
+  let lastSearchIndex = -1;
 
   // ── Refs ──
   const btnPreview = document.getElementById('btn-preview');
   const btnSync = document.getElementById('btn-sync');
   const btnClear = document.getElementById('btn-clear');
+  const btnFind = document.getElementById('btn-find');
+  const btnWrap = document.getElementById('btn-wrap');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
   const btnOpenNew = document.getElementById('btn-open-new');
   const btnRefresh = document.getElementById('btn-refresh-preview');
+  const btnEditorFullscreen = document.getElementById('btn-editor-fullscreen');
+  const btnPreviewFullscreen = document.getElementById('btn-preview-fullscreen');
   const fileInput = document.getElementById('file-input');
   const frame = document.getElementById('preview-frame');
   const placeholder = document.getElementById('preview-placeholder');
+  const previewError = document.getElementById('preview-error');
   const statusDot = document.getElementById('status-dot');
   const statusLabel = document.getElementById('status-label');
   const charCount = document.getElementById('char-count');
@@ -506,59 +667,246 @@
   const dropOverlay = document.getElementById('drop-overlay');
   const btnSelectAll = document.getElementById('btn-select-all');
   const btnCopyAll = document.getElementById('btn-copy-all');
+  const draftRestore = document.getElementById('draft-restore');
+  const draftRestoreMessage = document.getElementById('draft-restore-message');
+  const btnRestoreDraft = document.getElementById('btn-restore-draft');
+  const btnDismissDraft = document.getElementById('btn-dismiss-draft');
+  const findPanel = document.getElementById('find-panel');
+  const findInput = document.getElementById('find-input');
+  const replaceInput = document.getElementById('replace-input');
+  const findStatus = document.getElementById('find-status');
+  const btnFindPrev = document.getElementById('btn-find-prev');
+  const btnFindNext = document.getElementById('btn-find-next');
+  const btnReplaceOne = document.getElementById('btn-replace-one');
+  const btnReplaceAll = document.getElementById('btn-replace-all');
+  const btnCloseFind = document.getElementById('btn-close-find');
+  const btnOpenNewMobile = document.getElementById('btn-open-new-mobile');
 
-  // ── Char count ──
-  function updateCharCount() {
-    const v = editor.getValue();
-    const lines = editor.lineCount();
-    charCount.textContent = `${v.length.toLocaleString()} chars · ${lines} ln`;
-    applyModeForSize(lines);
-  }
-  editor.on('change', () => {
-    updateCharCount();
-    mobileSelectionPrimed = false;
-    setStatus('editing', 'editing…');
-    if (liveSync) schedLiveUpdate();
-  });
-  updateCharCount();
-
-  // ── Status helpers ──
   function setStatus(type, label) {
     statusDot.className = 'status-dot' + (type === 'live' ? ' live' : '');
     statusLabel.textContent = label;
   }
 
-  // ── Preview ──
+  function updateDirtyState() {
+    const dirty = editor.getValue() !== currentBaseline;
+    filenameDisplay.classList.toggle('dirty', dirty);
+    if (dirty) {
+      statusDot.className = 'status-dot dirty';
+      statusLabel.textContent = 'unsaved';
+    } else if (liveSync) {
+      setStatus('live', 'live');
+    } else {
+      setStatus('ready', 'ready');
+    }
+  }
+
+  function rememberBaseline(value, label = 'ready') {
+    currentBaseline = value;
+    filenameDisplay.classList.remove('dirty');
+    setStatus(liveSync ? 'live' : 'ready', liveSync ? 'live' : label);
+  }
+
+  function updateCharCount() {
+    const value = editor.getValue();
+    const lines = editor.lineCount();
+    charCount.textContent = `${value.length.toLocaleString()} chars · ${lines} ln`;
+    applyModeForSize(lines);
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function autosaveDraft() {
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, editor.getValue());
+      localStorage.setItem(AUTOSAVE_META_KEY, JSON.stringify({
+        filename: filenameDisplay.textContent,
+        savedAt: Date.now()
+      }));
+    } catch (err) {
+      showToast('Autosave unavailable');
+    }
+  }
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(autosaveDraft, 350);
+  }
+
+  function clearDraftBanner() {
+    draftRestore.classList.remove('show');
+  }
+
+  function hidePreviewError() {
+    previewError.classList.remove('visible');
+    previewError.textContent = '';
+  }
+
+  function showPreviewError(message) {
+    previewError.textContent = `Preview error: ${message}`;
+    previewError.classList.add('visible');
+  }
+
+  function injectPreviewHook(html) {
+    if (html.includes("source: 'html-viewer-preview'")) return html;
+    if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${PREVIEW_HOOK}</head>`);
+    if (/<body[^>]*>/i.test(html)) return html.replace(/<body([^>]*)>/i, `<body$1>${PREVIEW_HOOK}`);
+    return `${PREVIEW_HOOK}${html}`;
+  }
+
   function renderPreview(html) {
+    hidePreviewError();
     frame.style.display = 'block';
     placeholder.style.display = 'none';
-    previewActive = true;
-    const blob = new Blob([html], { type: 'text/html' });
+    const blob = new Blob([injectPreviewHook(html)], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     frame.onload = () => URL.revokeObjectURL(url);
     frame.src = url;
   }
 
-  btnPreview.addEventListener('click', () => {
-    const html = editor.getValue().trim();
-    if (!html) { showToast('Editor is empty'); return; }
-    renderPreview(html);
-    setStatus('ready', 'previewing');
-    showToast('Preview updated');
-  });
-
-  // ── Live Sync ──
   function schedLiveUpdate() {
     clearTimeout(liveTimer);
-    // Scale debounce with file size: small files update fast, large files wait longer
-    const lines = editor.lineCount();
-    const delay = lines > LARGE_FILE_THRESHOLD ? 800 : 420;
+    const delay = editor.lineCount() > LARGE_FILE_THRESHOLD ? 800 : 420;
     liveTimer = setTimeout(() => {
       const html = editor.getValue().trim();
       if (html) renderPreview(html);
       setStatus('live', 'live');
     }, delay);
   }
+
+  function setWordWrap(enabled) {
+    if (window.matchMedia('(max-width: 767px)').matches) enabled = true;
+    wordWrapEnabled = enabled;
+    editor.setOption('lineWrapping', enabled);
+    btnWrap.classList.toggle('toggle-on', enabled);
+    editor.refresh();
+    showToast(enabled ? 'Word wrap on' : 'Word wrap off');
+  }
+
+  function setFullscreenPane(pane) {
+    currentFullscreenPane = currentFullscreenPane === pane ? null : pane;
+    app.classList.toggle('editor-fullscreen', currentFullscreenPane === 'editor');
+    app.classList.toggle('preview-fullscreen', currentFullscreenPane === 'preview');
+    btnEditorFullscreen.classList.toggle('toggle-on', currentFullscreenPane === 'editor');
+    btnPreviewFullscreen.classList.toggle('toggle-on', currentFullscreenPane === 'preview');
+    editor.refresh();
+  }
+
+  function escapeRegExp(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function getSearchMatches(query) {
+    if (!query) return [];
+    const content = editor.getValue();
+    const regex = new RegExp(escapeRegExp(query), 'g');
+    const matches = [];
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      matches.push({ from: match.index, to: match.index + query.length });
+      if (match.index === regex.lastIndex) regex.lastIndex += 1;
+    }
+    return matches;
+  }
+
+  function indexToPos(index) {
+    return editor.posFromIndex(index);
+  }
+
+  function updateFindStatus() {
+    const total = lastSearchMatches.length;
+    const current = total ? lastSearchIndex + 1 : 0;
+    findStatus.textContent = `${current} / ${total}`;
+  }
+
+  function selectMatch(index) {
+    if (!lastSearchMatches.length) {
+      lastSearchIndex = -1;
+      updateFindStatus();
+      return false;
+    }
+    lastSearchIndex = (index + lastSearchMatches.length) % lastSearchMatches.length;
+    const match = lastSearchMatches[lastSearchIndex];
+    const from = indexToPos(match.from);
+    const to = indexToPos(match.to);
+    editor.setSelection(from, to);
+    editor.scrollIntoView({ from, to }, 80);
+    editor.focus();
+    updateFindStatus();
+    return true;
+  }
+
+  function refreshSearch(selectFirst = false) {
+    lastSearchMatches = getSearchMatches(findInput.value);
+    if (!lastSearchMatches.length) {
+      lastSearchIndex = -1;
+      updateFindStatus();
+      return false;
+    }
+    if (selectFirst || lastSearchIndex >= lastSearchMatches.length || lastSearchIndex < 0) {
+      return selectMatch(0);
+    }
+    updateFindStatus();
+    return true;
+  }
+
+  function toggleFindPanel(forceOpen) {
+    const open = forceOpen ?? !findPanel.classList.contains('visible');
+    findPanel.classList.toggle('visible', open);
+    if (open) {
+      refreshSearch(true);
+      setTimeout(() => findInput.focus(), 0);
+    } else {
+      editor.focus();
+    }
+  }
+
+  function loadFile(file) {
+    if (!file || !file.name.match(/\.html?$/i)) {
+      showToast('Please upload an .html or .htm file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const value = e.target.result;
+      editor.setValue(value);
+      filenameDisplay.textContent = file.name;
+      applyModeForSize(editor.lineCount());
+      rememberBaseline(value, 'file loaded');
+      clearDraftBanner();
+      autosaveDraft();
+      showToast(`Loaded: ${file.name}`);
+      if (liveSync) schedLiveUpdate();
+    };
+    reader.readAsText(file);
+  }
+
+  editor.on('change', () => {
+    updateCharCount();
+    mobileSelectionPrimed = false;
+    scheduleAutosave();
+    if (findPanel.classList.contains('visible')) refreshSearch();
+    setStatus('ready', 'editing…');
+    updateDirtyState();
+    if (liveSync) schedLiveUpdate();
+  });
+  updateCharCount();
+  updateDirtyState();
+
+  btnPreview.addEventListener('click', () => {
+    const html = editor.getValue().trim();
+    if (!html) {
+      showToast('Editor is empty');
+      return;
+    }
+    renderPreview(html);
+    setStatus('ready', 'previewing');
+    showToast('Preview updated');
+  });
 
   btnSync.addEventListener('click', () => {
     liveSync = !liveSync;
@@ -570,18 +918,21 @@
       schedLiveUpdate();
       showToast('Live sync on — edits update preview automatically');
     } else {
-      setStatus('ready', 'ready');
+      updateDirtyState();
       showToast('Live sync off');
     }
   });
 
-  // ── Refresh ──
   btnRefresh.addEventListener('click', () => {
-    renderPreview(editor.getValue());
+    const value = editor.getValue();
+    if (!value.trim()) {
+      showToast('Editor is empty');
+      return;
+    }
+    renderPreview(value);
     showToast('Preview reloaded');
   });
 
-  // ── Open in tab ──
   btnOpenNew.addEventListener('click', () => {
     const html = editor.getValue();
     const blob = new Blob([html], { type: 'text/html' });
@@ -590,18 +941,21 @@
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   });
 
-  // ── Clear ──
   btnClear.addEventListener('click', () => {
-    if (confirm('Clear all editor content?')) {
-      editor.setValue('');
-      editor.focus();
-      frame.style.display = 'none';
-      placeholder.style.display = '';
-      filenameDisplay.textContent = 'untitled.html';
-      setStatus('ready', 'ready');
-      showToast('Editor cleared');
-    }
+    if (!confirm('Clear all editor content?')) return;
+    editor.setValue('');
+    editor.focus();
+    frame.style.display = 'none';
+    placeholder.style.display = '';
+    hidePreviewError();
+    filenameDisplay.textContent = 'untitled.html';
+    rememberBaseline('', 'ready');
+    autosaveDraft();
+    showToast('Editor cleared');
   });
+
+  btnFind.addEventListener('click', () => toggleFindPanel());
+  btnWrap.addEventListener('click', () => setWordWrap(!wordWrapEnabled));
 
   btnUndo.addEventListener('click', () => {
     editor.execCommand('undo');
@@ -615,38 +969,24 @@
     showToast('Redo');
   });
 
-  // ── File upload ──
-  function loadFile(file) {
-    if (!file || !file.name.match(/\.html?$/i)) {
-      showToast('Please upload an .html or .htm file');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = e => {
-      editor.setValue(e.target.result);
-      filenameDisplay.textContent = file.name;
-      applyModeForSize(editor.lineCount());
-      showToast(`Loaded: ${file.name}`);
-      setStatus('ready', 'file loaded');
-      if (liveSync) schedLiveUpdate();
-    };
-    reader.readAsText(file);
-  }
+  fileInput.addEventListener('change', e => {
+    loadFile(e.target.files[0]);
+    fileInput.value = '';
+  });
 
-  fileInput.addEventListener('change', e => { loadFile(e.target.files[0]); fileInput.value = ''; });
-
-  // ── Drag & Drop ──
-  document.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.classList.add('show'); });
-  document.addEventListener('dragleave', e => { if (!e.relatedTarget) dropOverlay.classList.remove('show'); });
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropOverlay.classList.add('show');
+  });
+  document.addEventListener('dragleave', e => {
+    if (!e.relatedTarget) dropOverlay.classList.remove('show');
+  });
   document.addEventListener('drop', e => {
     e.preventDefault();
     dropOverlay.classList.remove('show');
     loadFile(e.dataTransfer.files[0]);
   });
 
-  // ── Split pane drag ──
-  // A full-screen transparent mask sits on top during drag so the iframe
-  // cannot steal mouse events (which causes the blue-selection bug).
   const dragMask = document.createElement('div');
   dragMask.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;cursor:col-resize;';
   document.body.appendChild(dragMask);
@@ -654,17 +994,21 @@
   const handle = document.getElementById('drag-handle');
   const editorPane = document.getElementById('editor-pane');
   const main = document.getElementById('main');
-  let dragging = false, startX, startW;
+  let dragging = false;
+  let startX = 0;
+  let startW = 0;
 
   handle.addEventListener('mousedown', e => {
-    dragging = true; startX = e.clientX; startW = editorPane.offsetWidth;
+    dragging = true;
+    startX = e.clientX;
+    startW = editorPane.offsetWidth;
     handle.classList.add('dragging');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-    // Block iframe from capturing events & prevent text selection
     frame.style.pointerEvents = 'none';
     dragMask.style.display = 'block';
   });
+
   window.addEventListener('mousemove', e => {
     if (!dragging) return;
     const dx = e.clientX - startX;
@@ -673,6 +1017,7 @@
     editorPane.style.width = newW + 'px';
     editor.refresh();
   });
+
   window.addEventListener('mouseup', () => {
     if (!dragging) return;
     dragging = false;
@@ -684,24 +1029,121 @@
     editor.refresh();
   });
 
-  // ── Toast ──
-  let toastTimer;
-  function showToast(msg) {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
-  }
-
-  // ── Keyboard shortcut: Cmd/Ctrl+Enter = Preview ──
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (findPanel.classList.contains('visible')) {
+        e.preventDefault();
+        toggleFindPanel(false);
+      } else if (currentFullscreenPane) {
+        e.preventDefault();
+        setFullscreenPane(currentFullscreenPane);
+      }
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      toggleFindPanel(true);
+      return;
+    }
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
       btnPreview.click();
     }
   });
 
-  // ── Mobile: Select All ──
+  btnFindNext.addEventListener('click', () => {
+    if (!refreshSearch(lastSearchIndex === -1)) {
+      showToast('No matches found');
+      return;
+    }
+    selectMatch(lastSearchIndex + 1);
+  });
+
+  btnFindPrev.addEventListener('click', () => {
+    if (!refreshSearch(lastSearchIndex === -1)) {
+      showToast('No matches found');
+      return;
+    }
+    selectMatch(lastSearchIndex - 1);
+  });
+
+  btnReplaceOne.addEventListener('click', () => {
+    if (!refreshSearch(lastSearchIndex === -1)) {
+      showToast('No matches found');
+      return;
+    }
+    const match = lastSearchMatches[lastSearchIndex];
+    editor.replaceRange(replaceInput.value, indexToPos(match.from), indexToPos(match.to));
+    refreshSearch(true);
+    showToast('Match replaced');
+  });
+
+  btnReplaceAll.addEventListener('click', () => {
+    const query = findInput.value;
+    if (!query) {
+      showToast('Enter text to find');
+      return;
+    }
+    const matches = getSearchMatches(query);
+    if (!matches.length) {
+      showToast('No matches found');
+      return;
+    }
+    editor.operation(() => {
+      for (let i = matches.length - 1; i >= 0; i -= 1) {
+        const match = matches[i];
+        editor.replaceRange(replaceInput.value, indexToPos(match.from), indexToPos(match.to));
+      }
+    });
+    refreshSearch(true);
+    showToast(`Replaced ${matches.length} match${matches.length === 1 ? '' : 'es'}`);
+  });
+
+  btnCloseFind.addEventListener('click', () => toggleFindPanel(false));
+  findInput.addEventListener('input', () => refreshSearch(true));
+  findInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) btnFindPrev.click();
+      else btnFindNext.click();
+    }
+  });
+  replaceInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnReplaceOne.click();
+    }
+  });
+
+  btnEditorFullscreen.addEventListener('click', () => setFullscreenPane('editor'));
+  btnPreviewFullscreen.addEventListener('click', () => setFullscreenPane('preview'));
+
+  window.addEventListener('message', event => {
+    const data = event.data;
+    if (!data || data.source !== 'html-viewer-preview') return;
+    if (data.type === 'error') {
+      showPreviewError(data.message || 'Script error');
+      setStatus('ready', 'preview warning');
+    }
+  });
+
+  btnRestoreDraft.addEventListener('click', () => {
+    const savedDraft = localStorage.getItem(AUTOSAVE_KEY);
+    if (savedDraft == null) return;
+    const meta = JSON.parse(localStorage.getItem(AUTOSAVE_META_KEY) || '{}');
+    editor.setValue(savedDraft);
+    if (meta.filename) filenameDisplay.textContent = meta.filename;
+    clearDraftBanner();
+    showToast('Draft restored');
+  });
+
+  btnDismissDraft.addEventListener('click', () => {
+    clearDraftBanner();
+    localStorage.removeItem(AUTOSAVE_KEY);
+    localStorage.removeItem(AUTOSAVE_META_KEY);
+    showToast('Draft dismissed');
+  });
+
   btnSelectAll.addEventListener('click', () => {
     editor.execCommand('selectAll');
     editor.focus();
@@ -714,13 +1156,11 @@
       showToast('Tap Select All first');
       return;
     }
-
     const value = editor.getValue();
     if (!value) {
       showToast('Editor is empty');
       return;
     }
-
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(value);
@@ -735,18 +1175,18 @@
     }
   });
 
-  // ── Mobile: Open Tab (mirrors desktop button) ──
-  document.getElementById('btn-open-new-mobile').addEventListener('click', () => {
+  btnOpenNewMobile.addEventListener('click', () => {
     const html = editor.getValue().trim();
-    if (!html) { showToast('Editor is empty'); return; }
+    if (!html) {
+      showToast('Editor is empty');
+      return;
+    }
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   });
 
-  // ── Pinch-to-zoom on the code editor ──
-  // Tracks two-finger spread/pinch and scales the editor font size smoothly.
   let pinchStartDist = null;
   let pinchStartSize = 13;
   let currentFontSize = 13;
@@ -783,7 +1223,20 @@
     if (e.touches.length < 2) pinchStartDist = null;
   });
 
-  // Initial refresh
+  const savedDraft = localStorage.getItem(AUTOSAVE_KEY);
+  if (savedDraft !== null && savedDraft !== STARTER) {
+    try {
+      const meta = JSON.parse(localStorage.getItem(AUTOSAVE_META_KEY) || '{}');
+      const when = meta.savedAt ? new Date(meta.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
+      draftRestoreMessage.textContent = when
+        ? `A saved draft from ${when} was found from your last session.`
+        : 'A saved draft was found from your last session.';
+    } catch (err) {}
+    draftRestore.classList.add('show');
+  } else {
+    autosaveDraft();
+  }
+
   setTimeout(() => editor.refresh(), 50);
 </script>
 </body>
