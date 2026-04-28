@@ -394,7 +394,8 @@
     }
     .CodeMirror-scroll {
       overflow-x: hidden !important;
-      padding-bottom: 16em !important;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
     }
     .CodeMirror-lines,
     .CodeMirror-line {
@@ -639,6 +640,15 @@ window.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function isMobileView() {
+    return window.matchMedia('(max-width: 767px)').matches;
+  }
+
+  function optimizeEditorForViewport() {
+    editor.setOption('viewportMargin', isMobileView() ? 12 : 50);
+    editor.refresh();
+  }
+
   // ── State ──
   let liveSync = false;
   let liveTimer = null;
@@ -787,7 +797,7 @@ window.addEventListener('DOMContentLoaded', function () {
   }
 
   function setWordWrap(enabled) {
-    if (window.matchMedia('(max-width: 767px)').matches) enabled = true;
+    if (isMobileView()) enabled = true;
     wordWrapEnabled = enabled;
     editor.setOption('lineWrapping', enabled);
     btnWrap.classList.toggle('toggle-on', enabled);
@@ -1231,6 +1241,8 @@ window.addEventListener('DOMContentLoaded', function () {
     if (e.touches.length < 2) pinchStartDist = null;
   });
 
+  window.addEventListener('resize', optimizeEditorForViewport);
+
   const savedDraft = localStorage.getItem(AUTOSAVE_KEY);
   if (savedDraft !== null && savedDraft !== STARTER) {
     try {
@@ -1245,6 +1257,7 @@ window.addEventListener('DOMContentLoaded', function () {
     autosaveDraft();
   }
 
+  optimizeEditorForViewport();
   setTimeout(() => editor.refresh(), 50);
 </script>
 </body>
