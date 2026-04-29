@@ -143,7 +143,61 @@
     border: 1px solid rgba(88,166,255,0.2);
     border-radius: 4px; padding: 1px 6px;
   }
+  .editor-tabs {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  #app.editor-fullscreen .editor-tabs { display: flex; }
+  .editor-tabs .btn {
+    height: 24px;
+    padding: 0 10px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted);
+  }
+  .editor-tabs .btn:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: transparent;
+  }
+  .editor-tabs .btn.toggle-on {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(88,166,255,0.35);
+  }
   .pane-actions { display: flex; align-items: center; gap: 6px; }
+  .preview-device-switcher {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  #app.preview-fullscreen .preview-device-switcher { display: flex; }
+  .preview-device-switcher .btn {
+    height: 24px;
+    padding: 0 9px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted);
+  }
+  .preview-device-switcher .btn:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: transparent;
+  }
+  .preview-device-switcher .btn.toggle-on {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(88,166,255,0.35);
+  }
 
   /* ── DRAG HANDLE ── */
   #drag-handle {
@@ -165,9 +219,39 @@
   #cm-wrap { flex: 1; overflow: hidden; }
 
   /* ── PREVIEW IFRAME ── */
-  #preview-frame {
-    flex: 1; width: 100%; border: none;
+  #preview-stage {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    overflow: auto;
     background: #fff;
+  }
+  #preview-frame {
+    flex: 1 1 auto; width: 100%; min-height: 100%; border: none;
+    background: #fff;
+  }
+  #app.preview-fullscreen #preview-stage {
+    padding: 16px;
+    background: #0b0f14;
+  }
+  #app.preview-fullscreen.device-desktop #preview-frame {
+    width: 100%;
+    max-width: none;
+  }
+  #app.preview-fullscreen.device-tablet #preview-frame {
+    flex: 0 0 820px;
+    width: 820px;
+    max-width: 100%;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  #app.preview-fullscreen.device-mobile #preview-frame {
+    flex: 0 0 390px;
+    width: 390px;
+    max-width: 100%;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
   }
   .preview-placeholder {
     flex: 1;
@@ -449,6 +533,10 @@
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Clear
     </button>
+    <button class="btn desktop-only" id="btn-export" title="Download project as a zip">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v7M5 6l3 3 3-3M3 11v2a1 1 0 001 1h8a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Export
+    </button>
     <button class="btn desktop-only" id="btn-find" title="Find and replace">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Find
@@ -484,7 +572,12 @@
     <div id="editor-pane">
       <div class="pane-header">
         <div class="pane-title">editor</div>
-        <div class="lang-badge">HTML</div>
+        <div class="lang-badge" id="lang-badge">HTML</div>
+        <div class="editor-tabs desktop-only" aria-label="Project files">
+          <button class="btn toggle-on" type="button" data-editor-file="html">HTML</button>
+          <button class="btn" type="button" data-editor-file="css">CSS</button>
+          <button class="btn" type="button" data-editor-file="js">JS</button>
+        </div>
         <div class="spacer"></div>
         <button class="btn desktop-only" id="btn-copy-all-desktop">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5" y="2" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 5.5V13a1.5 1.5 0 001.5 1.5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -508,6 +601,11 @@
     <div id="preview-pane">
       <div class="pane-header">
         <div class="pane-title">preview</div>
+        <div class="preview-device-switcher desktop-only" aria-label="Preview device size">
+          <button class="btn toggle-on" type="button" data-preview-device="desktop">Desktop</button>
+          <button class="btn" type="button" data-preview-device="tablet">Tablet</button>
+          <button class="btn" type="button" data-preview-device="mobile">Mobile</button>
+        </div>
         <div class="spacer"></div>
         <div class="pane-actions desktop-only">
           <button class="btn icon-only" id="btn-preview-fullscreen" title="Toggle preview fullscreen">
@@ -519,19 +617,21 @@
           Open tab
         </button>
         <button class="btn" id="btn-refresh-preview" title="Reload preview">
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M1 8a7 7 0 1012.9-3.8M1 8V3m0 5H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13.5 7.5A5.5 5.5 0 104.2 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 3.5v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Reload
         </button>
       </div>
       <div id="preview-error"></div>
-      <div class="preview-placeholder" id="preview-placeholder">
-        <div class="icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 21h8M12 18v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 8l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <div id="preview-stage">
+        <div class="preview-placeholder" id="preview-placeholder">
+          <div class="icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 21h8M12 18v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 8l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 14h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <p>No preview yet</p>
+          <p class="hint">Paste HTML and click Preview — or enable Live Sync</p>
         </div>
-        <p>No preview yet</p>
-        <p class="hint">Paste HTML and click Preview — or enable Live Sync</p>
+        <iframe id="preview-frame" title="HTML Preview" sandbox="allow-scripts" referrerpolicy="no-referrer" style="display:none;"></iframe>
       </div>
-      <iframe id="preview-frame" title="HTML Preview" sandbox="allow-scripts allow-same-origin" style="display:none;"></iframe>
     </div>
   </div>
 </div>
@@ -591,6 +691,7 @@
 </html>`;
   const AUTOSAVE_KEY = 'html-viewer-autosave-v1';
   const AUTOSAVE_META_KEY = 'html-viewer-autosave-meta-v1';
+  const AUTOSAVE_PROJECT_KEY = 'html-viewer-project-autosave-v1';
   const PREVIEW_HOOK = `<script>
 window.addEventListener('error', function (event) {
   try {
@@ -608,6 +709,18 @@ window.addEventListener('DOMContentLoaded', function () {
     parent.postMessage({ source: 'html-viewer-preview', type: 'loaded' }, '*');
   } catch (e) {}
 });
+<\/script>`;
+  const PREVIEW_CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob: https:; media-src data: blob: https:; font-src data: https:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">`;
+  const LOOP_GUARD = `
+<script>
+(function () {
+  var __htmlViewerLoopStartedAt = Date.now();
+  window.__htmlViewerLoopGuard = function () {
+    if (Date.now() - __htmlViewerLoopStartedAt > 1200) {
+      throw new Error('Possible infinite loop stopped by preview watchdog');
+    }
+  };
+})();
 <\/script>`;
 
   // ── CodeMirror setup ──
@@ -634,6 +747,16 @@ window.addEventListener('DOMContentLoaded', function () {
 
   function applyModeForSize(lineCount) {
     const currentMode = editor.getOption('mode');
+    if (activeFile === 'css') {
+      if (currentMode !== 'css') editor.setOption('mode', 'css');
+      editor.setOption('matchBrackets', true);
+      return;
+    }
+    if (activeFile === 'js') {
+      if (currentMode !== 'javascript') editor.setOption('mode', 'javascript');
+      editor.setOption('matchBrackets', true);
+      return;
+    }
     if (lineCount > LARGE_FILE_THRESHOLD && currentMode !== 'xml') {
       editor.setOption('mode', 'xml');
       editor.setOption('matchBrackets', false);
@@ -658,9 +781,17 @@ window.addEventListener('DOMContentLoaded', function () {
   let liveTimer = null;
   let mobileSelectionPrimed = false;
   let wordWrapEnabled = true;
-  let currentBaseline = STARTER;
+  let projectFiles = {
+    html: STARTER,
+    css: '',
+    js: ''
+  };
+  let baselineFiles = { ...projectFiles };
+  let activeFile = 'html';
+  let currentBaseline = JSON.stringify(baselineFiles);
   let autosaveTimer = null;
   let currentFullscreenPane = null;
+  let currentPreviewDevice = 'desktop';
   let lastSearchMatches = [];
   let lastSearchIndex = -1;
 
@@ -668,6 +799,7 @@ window.addEventListener('DOMContentLoaded', function () {
   const btnPreview = document.getElementById('btn-preview');
   const btnSync = document.getElementById('btn-sync');
   const btnClear = document.getElementById('btn-clear');
+  const btnExport = document.getElementById('btn-export');
   const btnFind = document.getElementById('btn-find');
   const btnWrap = document.getElementById('btn-wrap');
   const btnUndo = document.getElementById('btn-undo');
@@ -676,6 +808,8 @@ window.addEventListener('DOMContentLoaded', function () {
   const btnRefresh = document.getElementById('btn-refresh-preview');
   const btnEditorFullscreen = document.getElementById('btn-editor-fullscreen');
   const btnPreviewFullscreen = document.getElementById('btn-preview-fullscreen');
+  const previewDeviceButtons = document.querySelectorAll('[data-preview-device]');
+  const editorFileButtons = document.querySelectorAll('[data-editor-file]');
   const fileInput = document.getElementById('file-input');
   const frame = document.getElementById('preview-frame');
   const placeholder = document.getElementById('preview-placeholder');
@@ -684,6 +818,7 @@ window.addEventListener('DOMContentLoaded', function () {
   const statusLabel = document.getElementById('status-label');
   const charCount = document.getElementById('char-count');
   const liveBadge = document.getElementById('live-badge');
+  const langBadge = document.getElementById('lang-badge');
   const filenameDisplay = document.getElementById('filename-display');
   const toast = document.getElementById('toast');
   const dropOverlay = document.getElementById('drop-overlay');
@@ -711,8 +846,21 @@ window.addEventListener('DOMContentLoaded', function () {
     statusLabel.textContent = label;
   }
 
+  function syncActiveFile() {
+    projectFiles[activeFile] = editor.getValue();
+  }
+
+  function serializeProject(files = projectFiles) {
+    return JSON.stringify(files);
+  }
+
+  function getProjectFileLabel(file = activeFile) {
+    return file === 'html' ? 'HTML' : file === 'css' ? 'CSS' : 'JS';
+  }
+
   function updateDirtyState() {
-    const dirty = editor.getValue() !== currentBaseline;
+    syncActiveFile();
+    const dirty = serializeProject() !== currentBaseline;
     filenameDisplay.classList.toggle('dirty', dirty);
     if (dirty) {
       statusDot.className = 'status-dot dirty';
@@ -724,8 +872,9 @@ window.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function rememberBaseline(value, label = 'ready') {
-    currentBaseline = value;
+  function rememberBaseline(files = projectFiles, label = 'ready') {
+    baselineFiles = { ...files };
+    currentBaseline = serializeProject(baselineFiles);
     filenameDisplay.classList.remove('dirty');
     setStatus(liveSync ? 'live' : 'ready', liveSync ? 'live' : label);
   }
@@ -733,7 +882,7 @@ window.addEventListener('DOMContentLoaded', function () {
   function updateCharCount() {
     const value = editor.getValue();
     const lines = editor.lineCount();
-    charCount.textContent = `${value.length.toLocaleString()} chars · ${lines} ln`;
+    charCount.textContent = `${getProjectFileLabel()} · ${value.length.toLocaleString()} chars · ${lines} ln`;
     applyModeForSize(lines);
   }
 
@@ -746,7 +895,9 @@ window.addEventListener('DOMContentLoaded', function () {
 
   function autosaveDraft() {
     try {
-      localStorage.setItem(AUTOSAVE_KEY, editor.getValue());
+      syncActiveFile();
+      localStorage.setItem(AUTOSAVE_KEY, projectFiles.html);
+      localStorage.setItem(AUTOSAVE_PROJECT_KEY, JSON.stringify(projectFiles));
       localStorage.setItem(AUTOSAVE_META_KEY, JSON.stringify({
         filename: filenameDisplay.textContent,
         savedAt: Date.now()
@@ -775,6 +926,39 @@ window.addEventListener('DOMContentLoaded', function () {
     previewError.classList.add('visible');
   }
 
+  function escapeClosingTag(value, tagName) {
+    return value.replace(new RegExp(`</${tagName}`, 'gi'), `<\\/${tagName}`);
+  }
+
+  function instrumentLoops(js) {
+    return js
+      .replace(/\b(for|while)\s*\(([^)]*)\)\s*\{/g, '$&__htmlViewerLoopGuard();')
+      .replace(/\bdo\s*\{/g, '$&__htmlViewerLoopGuard();');
+  }
+
+  function instrumentInlineScripts(html) {
+    return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, body) => {
+      if (attrs && /\bsrc\s*=/i.test(attrs)) return match;
+      return `<script${attrs}>${escapeClosingTag(instrumentLoops(body), 'script')}<\/script>`;
+    });
+  }
+
+  function injectIntoHead(html, content) {
+    if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${content}</head>`);
+    if (/<html[^>]*>/i.test(html)) return html.replace(/<html([^>]*)>/i, `<html$1><head>${content}</head>`);
+    return `<head>${content}</head>${html}`;
+  }
+
+  function injectIntoHeadStart(html, content) {
+    if (/<head[^>]*>/i.test(html)) return html.replace(/<head([^>]*)>/i, `<head$1>${content}`);
+    return injectIntoHead(html, content);
+  }
+
+  function injectIntoBodyEnd(html, content) {
+    if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${content}</body>`);
+    return `${html}${content}`;
+  }
+
   function injectPreviewHook(html) {
     if (html.includes("source: 'html-viewer-preview'")) return html;
     if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${PREVIEW_HOOK}</head>`);
@@ -782,11 +966,25 @@ window.addEventListener('DOMContentLoaded', function () {
     return `${PREVIEW_HOOK}${html}`;
   }
 
-  function renderPreview(html) {
+  function buildPreviewHtml() {
+    syncActiveFile();
+    let html = projectFiles.html.trim() || '<!DOCTYPE html><html><head><title>Preview</title></head><body></body></html>';
+    html = instrumentInlineScripts(html);
+    html = injectIntoHeadStart(html, PREVIEW_CSP + PREVIEW_HOOK + LOOP_GUARD);
+    if (projectFiles.css.trim()) {
+      html = injectIntoHead(html, `<style>${escapeClosingTag(projectFiles.css, 'style')}</style>`);
+    }
+    if (projectFiles.js.trim()) {
+      html = injectIntoBodyEnd(html, `<script>${escapeClosingTag(instrumentLoops(projectFiles.js), 'script')}<\/script>`);
+    }
+    return html;
+  }
+
+  function renderPreview() {
     hidePreviewError();
     frame.style.display = 'block';
     placeholder.style.display = 'none';
-    const blob = new Blob([injectPreviewHook(html)], { type: 'text/html' });
+    const blob = new Blob([buildPreviewHtml()], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     frame.onload = () => URL.revokeObjectURL(url);
     frame.src = url;
@@ -796,8 +994,8 @@ window.addEventListener('DOMContentLoaded', function () {
     clearTimeout(liveTimer);
     const delay = editor.lineCount() > LARGE_FILE_THRESHOLD ? 800 : 420;
     liveTimer = setTimeout(() => {
-      const html = editor.getValue().trim();
-      if (html) renderPreview(html);
+      syncActiveFile();
+      if (projectFiles.html.trim() || projectFiles.css.trim() || projectFiles.js.trim()) renderPreview();
       setStatus('live', 'live');
     }, delay);
   }
@@ -818,6 +1016,138 @@ window.addEventListener('DOMContentLoaded', function () {
     btnEditorFullscreen.classList.toggle('toggle-on', currentFullscreenPane === 'editor');
     btnPreviewFullscreen.classList.toggle('toggle-on', currentFullscreenPane === 'preview');
     editor.refresh();
+  }
+
+  function setPreviewDevice(device) {
+    currentPreviewDevice = device;
+    app.classList.toggle('device-desktop', device === 'desktop');
+    app.classList.toggle('device-tablet', device === 'tablet');
+    app.classList.toggle('device-mobile', device === 'mobile');
+    previewDeviceButtons.forEach(btn => {
+      btn.classList.toggle('toggle-on', btn.dataset.previewDevice === device);
+      btn.setAttribute('aria-pressed', String(btn.dataset.previewDevice === device));
+    });
+  }
+
+  function setActiveFile(file) {
+    if (!projectFiles.hasOwnProperty(file) || file === activeFile) return;
+    syncActiveFile();
+    activeFile = file;
+    editor.setValue(projectFiles[activeFile]);
+    editorFileButtons.forEach(btn => {
+      btn.classList.toggle('toggle-on', btn.dataset.editorFile === activeFile);
+      btn.setAttribute('aria-pressed', String(btn.dataset.editorFile === activeFile));
+    });
+    langBadge.textContent = getProjectFileLabel();
+    updateCharCount();
+    updateDirtyState();
+    editor.focus();
+  }
+
+  function buildExportHtml() {
+    syncActiveFile();
+    let html = projectFiles.html.trim() || '<!DOCTYPE html><html><head><title>Project</title></head><body></body></html>';
+    if (projectFiles.css.trim()) {
+      html = injectIntoHead(html, '<link rel="stylesheet" href="style.css">');
+    }
+    if (projectFiles.js.trim()) {
+      html = injectIntoBodyEnd(html, '<script src="script.js"><\/script>');
+    }
+    return html;
+  }
+
+  function crc32(bytes) {
+    let crc = -1;
+    for (let i = 0; i < bytes.length; i += 1) {
+      crc = (crc >>> 8) ^ crc32.table[(crc ^ bytes[i]) & 0xff];
+    }
+    return (crc ^ -1) >>> 0;
+  }
+  crc32.table = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+
+  function writeUint16(bytes, value) {
+    bytes.push(value & 0xff, (value >>> 8) & 0xff);
+  }
+
+  function writeUint32(bytes, value) {
+    bytes.push(value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff);
+  }
+
+  function makeZip(files) {
+    const encoder = new TextEncoder();
+    const chunks = [];
+    const central = [];
+    let offset = 0;
+
+    files.forEach(file => {
+      const nameBytes = encoder.encode(file.name);
+      const data = encoder.encode(file.content);
+      const crc = crc32(data);
+      const local = [];
+      writeUint32(local, 0x04034b50);
+      writeUint16(local, 20);
+      writeUint16(local, 0);
+      writeUint16(local, 0);
+      writeUint16(local, 0);
+      writeUint16(local, 0);
+      writeUint32(local, crc);
+      writeUint32(local, data.length);
+      writeUint32(local, data.length);
+      writeUint16(local, nameBytes.length);
+      writeUint16(local, 0);
+      local.push(...nameBytes, ...data);
+      chunks.push(new Uint8Array(local));
+
+      const entry = [];
+      writeUint32(entry, 0x02014b50);
+      writeUint16(entry, 20);
+      writeUint16(entry, 20);
+      writeUint16(entry, 0);
+      writeUint16(entry, 0);
+      writeUint16(entry, 0);
+      writeUint16(entry, 0);
+      writeUint32(entry, crc);
+      writeUint32(entry, data.length);
+      writeUint32(entry, data.length);
+      writeUint16(entry, nameBytes.length);
+      writeUint16(entry, 0);
+      writeUint16(entry, 0);
+      writeUint16(entry, 0);
+      writeUint16(entry, 0);
+      writeUint32(entry, 0);
+      writeUint32(entry, offset);
+      entry.push(...nameBytes);
+      central.push(new Uint8Array(entry));
+      offset += local.length;
+    });
+
+    const centralOffset = offset;
+    const centralSize = central.reduce((sum, entry) => sum + entry.length, 0);
+    const end = [];
+    writeUint32(end, 0x06054b50);
+    writeUint16(end, 0);
+    writeUint16(end, 0);
+    writeUint16(end, files.length);
+    writeUint16(end, files.length);
+    writeUint32(end, centralSize);
+    writeUint32(end, centralOffset);
+    writeUint16(end, 0);
+    return new Blob([...chunks, ...central, new Uint8Array(end)], { type: 'application/zip' });
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
   function escapeRegExp(text) {
@@ -897,10 +1227,17 @@ window.addEventListener('DOMContentLoaded', function () {
     const reader = new FileReader();
     reader.onload = e => {
       const value = e.target.result;
+      projectFiles = { html: value, css: '', js: '' };
+      activeFile = 'html';
       editor.setValue(value);
       filenameDisplay.textContent = file.name;
+      editorFileButtons.forEach(btn => {
+        btn.classList.toggle('toggle-on', btn.dataset.editorFile === activeFile);
+        btn.setAttribute('aria-pressed', String(btn.dataset.editorFile === activeFile));
+      });
+      langBadge.textContent = getProjectFileLabel();
       applyModeForSize(editor.lineCount());
-      rememberBaseline(value, 'file loaded');
+      rememberBaseline(projectFiles, 'file loaded');
       clearDraftBanner();
       autosaveDraft();
       showToast(`Loaded: ${file.name}`);
@@ -922,12 +1259,12 @@ window.addEventListener('DOMContentLoaded', function () {
   updateDirtyState();
 
   btnPreview.addEventListener('click', () => {
-    const html = editor.getValue().trim();
-    if (!html) {
-      showToast('Editor is empty');
+    syncActiveFile();
+    if (!projectFiles.html.trim() && !projectFiles.css.trim() && !projectFiles.js.trim()) {
+      showToast('Project is empty');
       return;
     }
-    renderPreview(html);
+    renderPreview();
     setStatus('ready', 'previewing');
     showToast('Preview updated');
   });
@@ -948,34 +1285,55 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 
   btnRefresh.addEventListener('click', () => {
-    const value = editor.getValue();
-    if (!value.trim()) {
-      showToast('Editor is empty');
+    syncActiveFile();
+    if (!projectFiles.html.trim() && !projectFiles.css.trim() && !projectFiles.js.trim()) {
+      showToast('Project is empty');
       return;
     }
-    renderPreview(value);
+    renderPreview();
     showToast('Preview reloaded');
   });
 
   btnOpenNew.addEventListener('click', () => {
-    const html = editor.getValue();
-    const blob = new Blob([html], { type: 'text/html' });
+    const blob = new Blob([buildPreviewHtml()], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   });
 
   btnClear.addEventListener('click', () => {
-    if (!confirm('Clear all editor content?')) return;
+    if (!confirm('Clear all project files?')) return;
+    projectFiles = { html: '', css: '', js: '' };
+    activeFile = 'html';
     editor.setValue('');
+    editorFileButtons.forEach(btn => {
+      btn.classList.toggle('toggle-on', btn.dataset.editorFile === activeFile);
+      btn.setAttribute('aria-pressed', String(btn.dataset.editorFile === activeFile));
+    });
+    langBadge.textContent = getProjectFileLabel();
     editor.focus();
     frame.style.display = 'none';
     placeholder.style.display = '';
     hidePreviewError();
     filenameDisplay.textContent = 'untitled.html';
-    rememberBaseline('', 'ready');
+    rememberBaseline(projectFiles, 'ready');
     autosaveDraft();
-    showToast('Editor cleared');
+    showToast('Project cleared');
+  });
+
+  btnExport.addEventListener('click', () => {
+    syncActiveFile();
+    const zip = makeZip([
+      { name: 'index.html', content: buildExportHtml() },
+      { name: 'style.css', content: projectFiles.css },
+      { name: 'script.js', content: projectFiles.js },
+      {
+        name: 'README.txt',
+        content: 'Open index.html in a browser. This export keeps HTML, CSS, and JS as separate files.'
+      }
+    ]);
+    downloadBlob(zip, 'html-viewer-project.zip');
+    showToast('Project exported');
   });
 
   btnFind.addEventListener('click', () => toggleFindPanel());
@@ -1141,8 +1499,17 @@ window.addEventListener('DOMContentLoaded', function () {
 
   btnEditorFullscreen.addEventListener('click', () => setFullscreenPane('editor'));
   btnPreviewFullscreen.addEventListener('click', () => setFullscreenPane('preview'));
+  editorFileButtons.forEach(btn => {
+    btn.addEventListener('click', () => setActiveFile(btn.dataset.editorFile));
+    btn.setAttribute('aria-pressed', String(btn.dataset.editorFile === activeFile));
+  });
+  previewDeviceButtons.forEach(btn => {
+    btn.addEventListener('click', () => setPreviewDevice(btn.dataset.previewDevice));
+  });
+  setPreviewDevice(currentPreviewDevice);
 
   window.addEventListener('message', event => {
+    if (event.source !== frame.contentWindow) return;
     const data = event.data;
     if (!data || data.source !== 'html-viewer-preview') return;
     if (data.type === 'error') {
@@ -1152,18 +1519,35 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 
   btnRestoreDraft.addEventListener('click', () => {
+    const savedProject = localStorage.getItem(AUTOSAVE_PROJECT_KEY);
     const savedDraft = localStorage.getItem(AUTOSAVE_KEY);
-    if (savedDraft == null) return;
+    if (savedProject == null && savedDraft == null) return;
     const meta = JSON.parse(localStorage.getItem(AUTOSAVE_META_KEY) || '{}');
-    editor.setValue(savedDraft);
+    try {
+      projectFiles = savedProject
+        ? { html: '', css: '', js: '', ...JSON.parse(savedProject) }
+        : { html: savedDraft || '', css: '', js: '' };
+    } catch (err) {
+      projectFiles = { html: savedDraft || '', css: '', js: '' };
+    }
+    activeFile = 'html';
+    editor.setValue(projectFiles.html);
+    editorFileButtons.forEach(btn => {
+      btn.classList.toggle('toggle-on', btn.dataset.editorFile === activeFile);
+      btn.setAttribute('aria-pressed', String(btn.dataset.editorFile === activeFile));
+    });
+    langBadge.textContent = getProjectFileLabel();
     if (meta.filename) filenameDisplay.textContent = meta.filename;
     clearDraftBanner();
+    updateCharCount();
+    updateDirtyState();
     showToast('Draft restored');
   });
 
   btnDismissDraft.addEventListener('click', () => {
     clearDraftBanner();
     localStorage.removeItem(AUTOSAVE_KEY);
+    localStorage.removeItem(AUTOSAVE_PROJECT_KEY);
     localStorage.removeItem(AUTOSAVE_META_KEY);
     showToast('Draft dismissed');
   });
@@ -1220,12 +1604,12 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 
   btnOpenNewMobile.addEventListener('click', () => {
-    const html = editor.getValue().trim();
-    if (!html) {
-      showToast('Editor is empty');
+    syncActiveFile();
+    if (!projectFiles.html.trim() && !projectFiles.css.trim() && !projectFiles.js.trim()) {
+      showToast('Project is empty');
       return;
     }
-    const blob = new Blob([html], { type: 'text/html' });
+    const blob = new Blob([buildPreviewHtml()], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 5000);
@@ -1291,8 +1675,9 @@ window.addEventListener('DOMContentLoaded', function () {
 
   window.addEventListener('resize', optimizeEditorForViewport);
 
+  const savedProject = localStorage.getItem(AUTOSAVE_PROJECT_KEY);
   const savedDraft = localStorage.getItem(AUTOSAVE_KEY);
-  if (savedDraft !== null && savedDraft !== STARTER) {
+  if ((savedProject !== null && savedProject !== JSON.stringify(projectFiles)) || (savedProject === null && savedDraft !== null && savedDraft !== STARTER)) {
     try {
       const meta = JSON.parse(localStorage.getItem(AUTOSAVE_META_KEY) || '{}');
       const when = meta.savedAt ? new Date(meta.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
