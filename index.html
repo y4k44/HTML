@@ -710,7 +710,40 @@ window.addEventListener('DOMContentLoaded', function () {
   } catch (e) {}
 });
 <\/script>`;
-  const PREVIEW_CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob: https:; media-src data: blob: https:; font-src data: https:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">`;
+  const PREVIEW_CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob: https:; media-src data: blob: https:; font-src data: https:; style-src 'self' 'unsafe-inline' https:; script-src 'unsafe-inline' https:; connect-src https:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">`;
+  const STORAGE_SHIM = `
+<script>
+(function () {
+  function createStorageShim() {
+    var store = Object.create(null);
+    return {
+      get length() { return Object.keys(store).length; },
+      key: function (index) { return Object.keys(store)[index] || null; },
+      getItem: function (key) {
+        key = String(key);
+        return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
+      },
+      setItem: function (key, value) { store[String(key)] = String(value); },
+      removeItem: function (key) { delete store[String(key)]; },
+      clear: function () { store = Object.create(null); }
+    };
+  }
+  function ensureStorage(name) {
+    try {
+      window[name].getItem('__html_viewer_probe__');
+    } catch (err) {
+      try {
+        Object.defineProperty(window, name, {
+          value: createStorageShim(),
+          configurable: true
+        });
+      } catch (defineErr) {}
+    }
+  }
+  ensureStorage('localStorage');
+  ensureStorage('sessionStorage');
+})();
+<\/script>`;
   const LOOP_GUARD = `
 <script>
 (function () {
@@ -970,7 +1003,7 @@ window.addEventListener('DOMContentLoaded', function () {
     syncActiveFile();
     let html = projectFiles.html.trim() || '<!DOCTYPE html><html><head><title>Preview</title></head><body></body></html>';
     html = instrumentInlineScripts(html);
-    html = injectIntoHeadStart(html, PREVIEW_CSP + PREVIEW_HOOK + LOOP_GUARD);
+    html = injectIntoHeadStart(html, PREVIEW_CSP + STORAGE_SHIM + PREVIEW_HOOK + LOOP_GUARD);
     if (projectFiles.css.trim()) {
       html = injectIntoHead(html, `<style>${escapeClosingTag(projectFiles.css, 'style')}</style>`);
     }
