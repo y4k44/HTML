@@ -800,8 +800,9 @@ window.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  const mobileMediaQuery = window.matchMedia('(max-width: 767px)');
   function isMobileView() {
-    return window.matchMedia('(max-width: 767px)').matches;
+    return mobileMediaQuery.matches;
   }
 
   function optimizeEditorForViewport() {
@@ -990,13 +991,6 @@ window.addEventListener('DOMContentLoaded', function () {
   function injectIntoBodyEnd(html, content) {
     if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${content}</body>`);
     return `${html}${content}`;
-  }
-
-  function injectPreviewHook(html) {
-    if (html.includes("source: 'html-viewer-preview'")) return html;
-    if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${PREVIEW_HOOK}</head>`);
-    if (/<body[^>]*>/i.test(html)) return html.replace(/<body([^>]*)>/i, `<body$1>${PREVIEW_HOOK}`);
-    return `${PREVIEW_HOOK}${html}`;
   }
 
   function buildPreviewHtml() {
@@ -1210,7 +1204,7 @@ window.addEventListener('DOMContentLoaded', function () {
     findStatus.textContent = `${current} / ${total}`;
   }
 
-  function selectMatch(index) {
+  function selectMatch(index, focusEditor = true) {
     if (!lastSearchMatches.length) {
       lastSearchIndex = -1;
       updateFindStatus();
@@ -1222,12 +1216,12 @@ window.addEventListener('DOMContentLoaded', function () {
     const to = indexToPos(match.to);
     editor.setSelection(from, to);
     editor.scrollIntoView({ from, to }, 80);
-    editor.focus();
+    if (focusEditor) editor.focus();
     updateFindStatus();
     return true;
   }
 
-  function refreshSearch(selectFirst = false) {
+  function refreshSearch(selectFirst = false, focusEditor = true) {
     lastSearchMatches = getSearchMatches(findInput.value);
     if (!lastSearchMatches.length) {
       lastSearchIndex = -1;
@@ -1235,7 +1229,7 @@ window.addEventListener('DOMContentLoaded', function () {
       return false;
     }
     if (selectFirst || lastSearchIndex >= lastSearchMatches.length || lastSearchIndex < 0) {
-      return selectMatch(0);
+      return selectMatch(0, focusEditor);
     }
     updateFindStatus();
     return true;
@@ -1245,8 +1239,8 @@ window.addEventListener('DOMContentLoaded', function () {
     const open = forceOpen ?? !findPanel.classList.contains('visible');
     findPanel.classList.toggle('visible', open);
     if (open) {
-      refreshSearch(true);
-      setTimeout(() => findInput.focus(), 0);
+      refreshSearch(true, false);
+      findInput.focus();
     } else {
       editor.focus();
     }
@@ -1283,8 +1277,7 @@ window.addEventListener('DOMContentLoaded', function () {
     updateCharCount();
     mobileSelectionPrimed = false;
     scheduleAutosave();
-    if (findPanel.classList.contains('visible')) refreshSearch();
-    setStatus('ready', 'editing…');
+    if (findPanel.classList.contains('visible')) refreshSearch(false, false);
     updateDirtyState();
     if (liveSync) schedLiveUpdate();
   });
@@ -1515,7 +1508,7 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 
   btnCloseFind.addEventListener('click', () => toggleFindPanel(false));
-  findInput.addEventListener('input', () => refreshSearch(true));
+  findInput.addEventListener('input', () => refreshSearch(true, false));
   findInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1592,49 +1585,32 @@ window.addEventListener('DOMContentLoaded', function () {
     showToast('All code selected');
   });
 
+  async function copyEditorContent() {
+    const value = editor.getValue();
+    if (!value) { showToast('Editor is empty'); return; }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        editor.execCommand('selectAll');
+        document.execCommand('copy');
+      }
+      editor.focus();
+      showToast('All code copied');
+    } catch (err) {
+      showToast('Copy failed');
+    }
+  }
+
   btnCopyAll.addEventListener('click', async () => {
     if (!mobileSelectionPrimed) {
       showToast('Tap Select All first');
       return;
     }
-    const value = editor.getValue();
-    if (!value) {
-      showToast('Editor is empty');
-      return;
-    }
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        editor.execCommand('selectAll');
-        document.execCommand('copy');
-      }
-      editor.focus();
-      showToast('All code copied');
-    } catch (err) {
-      showToast('Copy failed');
-    }
+    await copyEditorContent();
   });
 
-  btnCopyAllDesktop.addEventListener('click', async () => {
-    const value = editor.getValue();
-    if (!value) {
-      showToast('Editor is empty');
-      return;
-    }
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        editor.execCommand('selectAll');
-        document.execCommand('copy');
-      }
-      editor.focus();
-      showToast('All code copied');
-    } catch (err) {
-      showToast('Copy failed');
-    }
-  });
+  btnCopyAllDesktop.addEventListener('click', copyEditorContent);
 
   btnOpenNewMobile.addEventListener('click', () => {
     syncActiveFile();
