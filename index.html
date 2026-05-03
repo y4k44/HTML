@@ -1219,8 +1219,8 @@ window.addEventListener('DOMContentLoaded', function () {
   }
 
   // NOTE: instrumentInlineScripts uses regex to locate <script> blocks.
-  // It will misparse if a script contains '</script>' as a string literal
-  // (e.g. document.write('</script>')). This is an inherent limitation of
+  // It will misparse if a script contains '<\/script>' as a string literal
+  // (e.g. document.write('<\/script>')). This is an inherent limitation of
   // regex-based HTML parsing and would require a proper HTML parser to fix.
   function instrumentInlineScripts(html) {
     return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, body) => {
@@ -1272,12 +1272,15 @@ window.addEventListener('DOMContentLoaded', function () {
       _currentBlobUrl = null;
     }
     const blob = new Blob([buildPreviewHtml()], { type: 'text/html' });
-    _currentBlobUrl = URL.createObjectURL(blob);
+    const newUrl = URL.createObjectURL(blob);
+    _currentBlobUrl = newUrl;
+    // Capture newUrl by value so a subsequent renderPreview() call that
+    // updates _currentBlobUrl doesn't cause this callback to revoke the wrong URL.
     frame.onload = () => {
-      URL.revokeObjectURL(_currentBlobUrl);
-      _currentBlobUrl = null;
+      URL.revokeObjectURL(newUrl);
+      if (_currentBlobUrl === newUrl) _currentBlobUrl = null;
     };
-    frame.src = _currentBlobUrl;
+    frame.src = newUrl;
   }
 
   function schedLiveUpdate() {
